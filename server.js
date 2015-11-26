@@ -4,6 +4,8 @@ var bodyParser = require('body-parser');
 
 var PORT = process.env.PORT || 2020;
 
+var _ = require('underscore');
+
 app.use(bodyParser.json());
 
 var todos = [];
@@ -33,12 +35,14 @@ app.get('/todos', function (req,res){
 
 app.get('/todos/:id', function (req,res){
 	var todoId = parseInt(req.params.id,10);
-	var matchedTodo;
-	todos.forEach(function(todo){
-		if (todoId === todo.id){
-			matchedTodo = todo;	
-		}
-	});
+	var matchedTodo = _.findWhere(todos, {id: todoId});
+	
+	// todos.forEach(function(todo){
+	// 	if (todoId === todo.id){
+	// 		matchedTodo = todo;	
+	// 	}					//Refactored using underscore
+	// });
+	
 		if(matchedTodo){
 			res.json(matchedTodo);
 		}
@@ -48,9 +52,18 @@ app.get('/todos/:id', function (req,res){
 });
 
 app.post('/todos', function (req, res) {
-	var body = req.body;
+	var body = _.pick(req.body,'description','completed');;
 	console.log('Description ' + body.description);
+
+
+	//trim in the line below body.description.trim().length 
+	//checks if the input is just space and remove all so it will be empty string
+	if (!_.isBoolean(body.completed) || !_.isString(body.description) || body.description.trim().length === 0){
+		return res.status(404).send();
+	}	
 	body.id = todoNextId++;
+	body.description = body.description.trim();
+
 	todos.push(body);
 	res.json(todos);
 	//res.json(body);
@@ -59,3 +72,6 @@ app.post('/todos', function (req, res) {
 app.listen(PORT, function (){
 	console.log('EXPRESS RUNNIG ON PORT');
 });
+
+
+
