@@ -115,7 +115,7 @@ app.post('/todos', function(req, res) {
 	var body = _.pick(req.body, 'description', 'completed');
 
 	db.todo.create(body).then(function(todo) {
-		console.log(todo.toJSON());
+
 		res.json(todo.toJSON());
 	}, function(e) {
 		res.status(400).json(e);
@@ -141,7 +141,7 @@ app.post('/todos', function(req, res) {
 app.post('/users', function (req,res){
 	var body = _.pick(req.body, 'email', 'password');
 	db.user.create(body).then(function (user){
-		res.json(user.toJSON());
+		res.json(user.toPublicJSON());
 	}, function(e) {
 		res.status(400).json(e);
 	});
@@ -235,7 +235,7 @@ app.put('/todos/:id', function(req, res) {
 });
 
 
-db.sequelize.sync().then(function() {
+db.sequelize.sync({force: true}).then(function() {
 	app.listen(PORT, function() {
 		console.log('EXPRESS RUNNIG ON PORT');
 	});
