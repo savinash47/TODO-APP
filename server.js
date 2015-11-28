@@ -35,59 +35,87 @@ app.get('/', function(req, res) {
 //Get /todos?complete=true&description=description
 app.get('/todos', function(req, res) {
 	//if the url has query parametersd
-	var queryParams = req.query;
-	var filteredTodos = todos;
+	//var queryParams = req.query;
+	//var filteredTodos = todos;
 
-	if (queryParams.hasOwnProperty('completed') && queryParams.completed === 'true') {
-		filteredTodos = _.where(filteredTodos, {
-			completed: true
-		});
-	} else if (queryParams.hasOwnProperty('completed') && queryParams.completed === 'false') {
-		filteredTodos = _.where(filteredTodos, {
-			completed: false
-		});
+	// if (queryParams.hasOwnProperty('completed') && queryParams.completed === 'true') {
+	// 	filteredTodos = _.where(filteredTodos, {
+	// 		completed: true
+	// 	});
+	// } else if (queryParams.hasOwnProperty('completed') && queryParams.completed === 'false') {
+	// 	filteredTodos = _.where(filteredTodos, {
+	// 		completed: false
+	// 	});
+	// }
+
+	// if (queryParams.hasOwnProperty('description') && queryParams.description.length > 0) {
+	// 	filteredTodos = _.filter(filteredTodos, function(todo) { //parse all the todo's in todos and 
+	// 		//check if the description 
+	// 		//is present
+	// 		return todo.description.toLowerCase().indexOf(queryParams.description.toLowerCase()) > -1;
+	// 	});
+	// }
+
+	// //res.json(todos); original case initial
+
+	// res.json(filteredTodos);
+	var query = req.query;
+	var where = {};
+
+	if (query.hasOwnProperty('completed') && query.completed === 'true') {
+		where.completed = true;
+	} else if (query.hasOwnProperty('completed') && query.completed === 'false') {
+		where.completed = false;
 	}
-
-	if (queryParams.hasOwnProperty('description') && queryParams.description.length > 0) {
-		filteredTodos = _.filter(filteredTodos, function(todo) { //parse all the todo's in todos and 
-			//check if the description 
-			//is present
-			return todo.description.toLowerCase().indexOf(queryParams.description.toLowerCase()) > -1;
-		});
+	if (query.hasOwnProperty('description') && query.description.length > 0) {
+		where.description = {
+			$like : '%' + query.description + '%'
+		}
 	}
+	db.todo.findAll({where: where}).then(function (todo) {
+		res.json(todo);
+	}, function (e) {
+		res.status(500);
+	});
 
-	//res.json(todos); original case initial
 
-	res.json(filteredTodos);
 
 });
 
 app.get('/todos/:id', function(req, res) {
 	var todoId = parseInt(req.params.id, 10);
-	var matchedTodo = _.findWhere(todos, {
-		id: todoId
-	});
+	// var matchedTodo = _.findWhere(todos, {
+	// 	id: todoId
+	// });
 
 	// todos.forEach(function(todo){
 	// 	if (todoId === todo.id){
 	// 		matchedTodo = todo;	
 	// 	}					//Refactored using underscore
 	// });
-
-	if (matchedTodo) {
-		res.json(matchedTodo);
-	} else {
-		res.status(404).send();
-	}
+	db.todo.findById(todoId).then(function(todo) {
+		if (todo) {
+			res.json(todo.toJSON());
+		} else {
+			res.status(400).send();
+		}
+	}, function(e) {
+		res.status(500).json(e);
+	});
+	// if (matchedTodo) {
+	// 	res.json(matchedTodo);
+	// } else {
+	// 	res.status(404).send();
+	// }
 });
 
 app.post('/todos', function(req, res) {
 	var body = _.pick(req.body, 'description', 'completed');
 
-	db.todo.create(body).then(function (todo){
+	db.todo.create(body).then(function(todo) {
 		console.log(todo.toJSON());
 		res.json(todo.toJSON());
-	}).catch (function (e){
+	}, function(e) {
 		res.status(400).json(e);
 	});
 
