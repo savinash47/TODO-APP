@@ -163,15 +163,24 @@ app.post('/users', function(req, res) {
 
 app.post('/users/login', function(req, res) {
 	var body = _.pick(req.body, 'email', 'password');
+	var userInstance;
 
 	db.user.authenticate(body).then(function(user) {
 		var token = user.generateToken('authentication');
-		if (token) {
-			res.header('Auth', token).json(user.toPublicJSON());
-		} else {
-			res.status(401).send();
-		}
-	}, function(e) {
+		userInstance = user;
+
+		return db.token.create({
+			token: token
+		});
+		// if (token) {
+		// 	res.header('Auth', token).json(user.toPublicJSON());
+		// } else {
+		// 	res.status(401).send();
+		// }
+	}).then(function(tokenInstance){
+		res.header('Auth', tokenInstance.get('token')).json(userInstance.toPublicJSON());
+	}). catch(function(e) {
+		console.log(e);
 		res.status(401).send();
 	});
 	// if(typeof body.email !== 'string' && typeof body.password !== 'string'){
@@ -190,6 +199,16 @@ app.post('/users/login', function(req, res) {
 	// }, function (e){
 	// 	res.status(500).send();
 	// })
+});
+
+//user logout
+
+app.delete('/users/login', middleware.requireAuthentication, function(req,res) {
+	req.token.destroy().then(function(){
+		res.status(204).send();
+	},function(e){
+		res.status(500).send();
+	});
 });
 
 app.delete('/todos/:id', middleware.requireAuthentication, function(req, res) {
