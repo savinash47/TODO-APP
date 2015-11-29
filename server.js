@@ -12,6 +12,7 @@ var db = require('./db.js');
 app.use(bodyParser.json());
 
 var todos = [];
+var middleware = require('./middleware.js')(db);
 
 var todoNextId = 1;
 // var todos = [{
@@ -34,7 +35,7 @@ app.get('/', function(req, res) {
 
 //GET /todos?completed=true
 //Get /todos?complete=true&description=description
-app.get('/todos', function(req, res) {
+app.get('/todos', middleware.requireAuthentication, function(req, res) {
 	//if the url has query parametersd
 	//var queryParams = req.query;
 	//var filteredTodos = todos;
@@ -85,7 +86,7 @@ app.get('/todos', function(req, res) {
 
 });
 
-app.get('/todos/:id', function(req, res) {
+app.get('/todos/:id', middleware.requireAuthentication, function(req, res) {
 	var todoId = parseInt(req.params.id, 10);
 	// var matchedTodo = _.findWhere(todos, {
 	// 	id: todoId
@@ -112,7 +113,7 @@ app.get('/todos/:id', function(req, res) {
 	// }
 });
 
-app.post('/todos', function(req, res) {
+app.post('/todos', middleware.requireAuthentication, function(req, res) {
 	var body = _.pick(req.body, 'description', 'completed');
 
 	db.todo.create(body).then(function(todo) {
@@ -139,25 +140,26 @@ app.post('/todos', function(req, res) {
 });
 
 //post request to add new users
-app.post('/users', function (req,res){
+app.post('/users', function(req, res) {
 	var body = _.pick(req.body, 'email', 'password');
-	db.user.create(body).then(function (user){
+	db.user.create(body).then(function(user) {
 		res.json(user.toPublicJSON());
 	}, function(e) {
 		res.status(400).json(e);
 	});
 });
-app.post('/users/login', function (req,res){
-	var body = _.pick(req.body,'email','password');
 
-	db.user.authenticate(body).then(function (user){
+app.post('/users/login', function(req, res) {
+	var body = _.pick(req.body, 'email', 'password');
+
+	db.user.authenticate(body).then(function(user) {
 		var token = user.generateToken('authentication');
-		if(token){
+		if (token) {
 			res.header('Auth', token).json(user.toPublicJSON());
 		} else {
 			res.status(401).send();
 		}
-	}, function (e){
+	}, function(e) {
 		res.status(401).send();
 	});
 	// if(typeof body.email !== 'string' && typeof body.password !== 'string'){
@@ -178,7 +180,7 @@ app.post('/users/login', function (req,res){
 	// })
 });
 
-app.delete('/todos/:id', function(req, res) {
+app.delete('/todos/:id', middleware.requireAuthentication, function(req, res) {
 	var todoId = parseInt(req.params.id, 10);
 	var where = {};
 	where.id = todoId;
@@ -211,7 +213,7 @@ app.delete('/todos/:id', function(req, res) {
 
 });
 
-app.put('/todos/:id', function(req, res) {
+app.put('/todos/:id', middleware.requireAuthentication, function(req, res) {
 	var todoId = parseInt(req.params.id, 10);
 	var body = _.pick(req.body, 'description', 'completed');
 	var attributes = {};
@@ -266,7 +268,9 @@ app.put('/todos/:id', function(req, res) {
 });
 
 
-db.sequelize.sync({force:true}).then(function() {
+db.sequelize.sync({
+	//force: true
+}).then(function() {
 	app.listen(PORT, function() {
 		console.log('EXPRESS RUNNIG ON PORT');
 	});
